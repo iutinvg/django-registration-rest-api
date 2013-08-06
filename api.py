@@ -1,9 +1,7 @@
 from django.conf.urls import url
 from tastypie.authentication import BasicAuthentication
-from tastypie.authorization import Authorization
-from tastypie.resources import Resource, ModelResource
+from tastypie.resources import ModelResource
 from tastypie.models import ApiKey
-from tastypie import fields
 
 
 class LoginResource (ModelResource):
