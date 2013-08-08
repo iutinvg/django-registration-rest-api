@@ -11,12 +11,11 @@ class LoginResource (ModelResource):
         authentication = BasicAuthentication()
         queryset = ApiKey.objects.all()
         allowed_methods = ['get']
-        list_allowed_methods = ['get']
         fields = ['key']
         include_resource_uri = False
 
-    def apply_authorization_limits(self, request, object_list):
-        return object_list.filter(user=request.user)
+    def get_object_list(self, request):
+        return super(LoginResource, self).get_object_list(request).filter(user=request.user)
 
     def prepend_urls(self):
         return [
