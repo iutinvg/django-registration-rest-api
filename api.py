@@ -95,6 +95,12 @@ class ActivationResource (ModelResource):
 
 
 class PasswordResetResource (Resource):
+    """ Initialtes password reset.
+
+    Here you can change ``email_template_name``, ``subject_template_name``,
+    ``password_reset_form``, ``token_generator``. By default all values are set
+    to django defaults.
+    """
     email_template_name = 'registration/password_reset_email.html'
     subject_template_name = 'registration/password_reset_subject.txt'
     password_reset_form = PasswordResetForm
@@ -129,6 +135,12 @@ class PasswordResetResource (Resource):
 
 
 class PasswordResetConfirmResource (Resource):
+    """ Confirms password reset. E.g. allows to set new
+    password using token got in email.
+
+    You can set ``token_generator`` and ``set_password_form`` if you
+    are not happy with django default setings.
+    """
     token_generator = default_token_generator
     set_password_form = SetPasswordForm
 
@@ -144,15 +156,15 @@ class PasswordResetConfirmResource (Resource):
         user = None
         token = None
 
-        # try:
-        m = re.search('([0-9A-Za-z]+)-(.+)', bundle.data['reset_key'])
-        uidb36 = m.group(1)
-        token = m.group(2)
-        uid_int = base36_to_int(uidb36)
-        UserModel = get_user_model()
-        user = UserModel._default_manager.get(pk=uid_int)
-        # except:
-        #     raise BadRequest('User does not exist')
+        try:
+            m = re.search('([0-9A-Za-z]+)-(.+)', bundle.data['reset_key'])
+            uidb36 = m.group(1)
+            token = m.group(2)
+            uid_int = base36_to_int(uidb36)
+            UserModel = get_user_model()
+            user = UserModel._default_manager.get(pk=uid_int)
+        except:
+            raise BadRequest('User does not exist')
 
         if not self.token_generator.check_token(user, token):
             raise BadRequest('Bad token')
@@ -167,4 +179,3 @@ class PasswordResetConfirmResource (Resource):
 
     def detail_uri_kwargs(self, bundle_or_obj):
         return {}
-
