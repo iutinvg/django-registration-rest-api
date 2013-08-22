@@ -1,15 +1,19 @@
+import re
+
 from django.conf.urls import url
+from django.contrib.auth import get_user_model
 from django.contrib.auth.models import User
 from django.contrib.auth.views import password_reset
-from django.contrib.auth.forms import PasswordResetForm
+from django.contrib.auth.forms import PasswordResetForm, SetPasswordForm
 from django.contrib.auth.tokens import default_token_generator
+from django.utils.http import base36_to_int
 
 from tastypie.authentication import BasicAuthentication
 from tastypie.authorization import Authorization
 from tastypie.resources import ModelResource, Resource
 from tastypie.models import ApiKey
 from tastypie.validation import FormValidation
-from tastypie.exceptions import ImmediateHttpResponse, BadRequest
+from tastypie.exceptions import ImmediateHttpResponse, BadRequest, NotFound
 
 from registration.forms import RegistrationFormUniqueEmail
 from registration.models import RegistrationProfile
@@ -104,7 +108,7 @@ class PasswordResetResource (Resource):
     def obj_create(self, bundle, **kwargs):
         request = bundle.request
         request.POST = bundle.data # TODO: find a better way to fix POST?
-        form = PasswordResetForm(request.POST)
+        form = self.password_reset_form(request.POST)
 
         if form.is_valid():
             opts = {
@@ -123,4 +127,44 @@ class PasswordResetResource (Resource):
     def detail_uri_kwargs(self, bundle_or_obj):
         return {}
 
-# (?P<uidb36>[0-9A-Za-z]+)-(?P<token>.+)
+
+class PasswordResetConfirmResource (Resource):
+    token_generator = default_token_generator
+    set_password_form = SetPasswordForm
+
+    class Meta:
+        object_class = User
+        authorization = Authorization()
+        allowed_methods = ['post']
+
+    def obj_create(self, bundle, **kwargs):
+        request = bundle.request
+        request.POST = bundle.data # TODO: find a better way to fix POST?
+
+        user = None
+        token = None
+
+        # try:
+        m = re.search('([0-9A-Za-z]+)-(.+)', bundle.data['reset_key'])
+        uidb36 = m.group(1)
+        token = m.group(2)
+        uid_int = base36_to_int(uidb36)
+        UserModel = get_user_model()
+        user = UserModel._default_manager.get(pk=uid_int)
+        # except:
+        #     raise BadRequest('User does not exist')
+
+        if not self.token_generator.check_token(user, token):
+            raise BadRequest('Bad token')
+
+        form = self.set_password_form(user, request.POST)
+        if not form.is_valid():
+            raise ImmediateHttpResponse(response=self.error_response(bundle.request, form.errors))
+
+        form.save()
+
+        return bundle
+
+    def detail_uri_kwargs(self, bundle_or_obj):
+        return {}
+
