@@ -3,7 +3,6 @@ import re
 from django.conf.urls import url
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import User
-from django.contrib.auth.views import password_reset
 from django.contrib.auth.forms import PasswordResetForm, SetPasswordForm
 from django.contrib.auth.tokens import default_token_generator
 from django.utils.http import base36_to_int
@@ -13,7 +12,7 @@ from tastypie.authorization import Authorization
 from tastypie.resources import ModelResource, Resource
 from tastypie.models import ApiKey
 from tastypie.validation import FormValidation
-from tastypie.exceptions import ImmediateHttpResponse, BadRequest, NotFound
+from tastypie.exceptions import ImmediateHttpResponse, BadRequest
 
 from registration.forms import RegistrationFormUniqueEmail
 from registration.models import RegistrationProfile
